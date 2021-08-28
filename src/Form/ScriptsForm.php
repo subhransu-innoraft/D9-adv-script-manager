@@ -33,6 +33,13 @@ class ScriptsForm extends ConfigFormBase {
   protected $entityTypeManager;
 
   /**
+   * The current request on url.
+   *
+   * @var Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $requestStack;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -40,6 +47,7 @@ class ScriptsForm extends ConfigFormBase {
     $instance->database = $container->get('database');
     $instance->messenger = $container->get('messenger');
     $instance->entityTypeManager = $container->get('entity_type.manager');
+    $instance->requestStack = $container->get('request_stack');
     return $instance;
   }
 
@@ -63,6 +71,7 @@ class ScriptsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    $request_id = $this->requestStack->getCurrentRequest()->query->get('num');
     $config = $this->config('advance_script_manager.scripts');
     $form['name'] = [
       '#type' => 'textfield',
