@@ -165,8 +165,11 @@ class ScriptsForm extends ConfigFormBase {
       'content_type' => $content_types,
       'user_roles' => $user_roles,
       'status' => $value['enable_code_script'],
+      'created' => time(),
     ];
     if (!empty($request_id)) {
+      unset($field['created']);
+      $field['updated'] = time();
       $res = $this->database->update('advance_script_manager')
         ->fields($field)
         ->condition('id', $request_id)

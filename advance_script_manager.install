@@ -56,12 +56,14 @@ function advance_script_manager_schema() {
         'not null' => FALSE,
       ],
       'created' => [
-        'mysql_type' => 'timestamp',
+        'mysql_type' => 'varchar',
+        'length' => 50,
         'not null' => FALSE,
         'default' => NULL,
       ],
       'updated' => [
-        'mysql_type' => 'timestamp',
+        'mysql_type' => 'varchar',
+        'length' => 50,
         'not null' => FALSE,
         'default' => NULL,
       ],

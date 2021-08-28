@@ -154,8 +154,8 @@ class ListscriptsForm extends FormBase {
       $tblrow[$row->id] = [
         'script_name' => $row->script_name,
         'visibility_section' => $row->visibility_section,
-        'created' => ($row->created ?: 'NULL'),
-        'updated' => ($row->updated ?: 'NULL'),
+        'created' => ($row->created ? date('m/d/Y H:i:s', $row->created) : 'NULL'),
+        'updated' => ($row->updated ? date('m/d/Y H:i:s', $row->updated) : 'NULL'),
         'status' => ($row->status == 1 ? $this->t('active') : $this->t('Disabled')),
         'action' => Link::fromTextAndUrl('Edit script', $edit),
       ];
