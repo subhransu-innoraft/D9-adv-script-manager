@@ -8,7 +8,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Url;
 
 /**
- * Class ScriptsForm.
+ * Class ScriptsForm used for script entry form.
  */
 class ScriptsForm extends ConfigFormBase {
 
@@ -90,7 +90,7 @@ class ScriptsForm extends ConfigFormBase {
         '1' => $this->t('Active'),
         '2' => $this->t('Disabled'),
       ],
-      '#description' => $this->t('Scripts code snippets are disabled by default, so you won\'t accidentally make the code live.'),
+      '#description' => $this->t("Scripts code snippets are disabled by default, so you won\'t accidentally make the code live."),
       '#default_value' => isset($data->status) ? $data->status : 2,
     ];
     $form['script_code'] = [
@@ -169,6 +169,7 @@ class ScriptsForm extends ConfigFormBase {
     if (!empty($request_id)) {
       $res = $this->database->update('advance_script_manager')
         ->fields($field)
+        ->condition('id', $request_id)
         ->execute();
       if ($res) {
         $this->messenger->addMessage($this->t('Script config updated.'));

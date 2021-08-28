@@ -16,7 +16,7 @@ function advance_script_manager_schema() {
         'unsigned' => TRUE,
         'size' => 'medium',
         'not null' => TRUE,
-        'description' => t('Auto increment fields for advance_script_manager.'),
+        'description' => 'Auto increment fields for advance_script_manager.',
       ],
       'script_name' => [
         'type' => 'varchar',
@@ -77,7 +77,7 @@ function advance_script_manager_schema() {
 }
 
 /**
- * Implemented hook_uninstall().
+ * Implements hook_uninstall().
  */
 function advance_script_manager_uninstall() {
   // Remove tables.

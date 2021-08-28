@@ -6,7 +6,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class AdvanceScriptController.
+ * Class AdvanceScriptController used for main script page.
  */
 class AdvanceScriptController extends ControllerBase {
 
