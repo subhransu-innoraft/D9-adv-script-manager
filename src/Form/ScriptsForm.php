@@ -116,7 +116,7 @@ class ScriptsForm extends ConfigFormBase {
         'Body' => $this->t('Body'),
       ],
       '#size' => 1,
-      '#default_value' => isset($data->visibility_section) ? $data->visibility_section : 'Header',
+      '#default_value' => isset($data['visibility_section']) ? $data['visibility_section'] : 'Header',
     ];
     $form['pages_settings'] = [
       '#type' => 'radios',
@@ -125,23 +125,25 @@ class ScriptsForm extends ConfigFormBase {
         'all' => $this->t('All pages expected those listed'),
         'only' => $this->t('Only the listed pages'),
       ],
-      '#default_value' => isset($data->pages_settings) ? $data->pages_settings : '',
+      '#default_value' => isset($data['pages_settings']) ? $data['pages_settings'] : '',
     ];
     $form['visibility_pages'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Pages'),
       '#description' => $this->t('Specify the pages by using their paths. Enter one path per line. &ltfront&gt is the front page'),
-      '#default_value' => isset($data->visibility_pages) ? $data->visibility_pages : '',
+      '#default_value' => isset($data['visibility_pages']) ? $data['visibility_pages'] : '',
     ];
     $form['user_roles'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('User Roles'),
       '#options' => $this->fetchAllRoles(),
+      '#default_value' => isset($data['user_roles']) ? explode(',', $data['user_roles']) : '',
     ];
     $form['content_types'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('Content Types'),
       '#options' => $this->fetchContentTypes(),
+      '#default_value' => isset($data['content_type']) ? explode(',', $data['content_type']) : '',
     ];
 
     return parent::buildForm($form, $form_state);
@@ -208,8 +210,8 @@ class ScriptsForm extends ConfigFormBase {
   public function fetchContentTypes() {
     $allTypes = $this->entityTypeManager->getStorage('node_type')->loadMultiple();
     $data = [];
-    foreach ($allTypes as $value) {
-      $data[$value->label()] = $value->label();
+    foreach ($allTypes as $machine_name => $value) {
+      $data[$machine_name] = $value->label();
     }
     return $data;
   }
