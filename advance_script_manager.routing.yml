@@ -1,0 +1,19 @@
+advance_script_manager.scripts_form:
+  path: '/admin/config/development/advance-script-manager/scripts'
+  defaults:
+    _form: '\Drupal\advance_script_manager\Form\ScriptsForm'
+    _title: 'Advance scripts manager'
+  requirements:
+    _permission: 'advance_script_manager_settings'
+  options:
+    _admin_route: TRUE
+
+advance_script_manager.listscripts_form:
+  path: '/admin/config/development/advance-script-manager/manage-scripts'
+  defaults:
+    _form: '\Drupal\advance_script_manager\Form\ListscriptsForm'
+    _title: 'Advance scripts manager'
+  requirements:
+    _permission: 'advance_script_manager_settings'
+  options:
+    _admin_route: TRUE

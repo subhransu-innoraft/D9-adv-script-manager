@@ -1,0 +1,4 @@
+advance_script_manager_settings:
+  title: 'Advance scripts manager'
+  description: 'Users who have this permission can add and remove the scripts from the site.'
+  restrict access: TRUE

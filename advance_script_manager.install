@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * @file
+ * Implemented hook_schema to create table on module enable.
+ */
+
+/**
+ * Create table advance_script_manager on module enable.
+ */
+function advance_script_manager_schema() {
+  $schema['advance_script_manager'] = [
+    'fields' => [
+      'id' => [
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'size' => 'medium',
+        'not null' => TRUE,
+        'description' => t('Auto increment fields for advance_script_manager.'),
+      ],
+      'script_name' => [
+        'type' => 'varchar',
+        'length' => 100,
+        'not null' => TRUE,
+      ],
+      'script_code' => [
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => FALSE,
+      ],
+      'css_code' => [
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => FALSE,
+      ],
+      'visibility_section' => [
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ],
+      'pages_settings' => [
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => FALSE,
+      ],
+      'visibility_pages' => [
+        'type' => 'text',
+        'not null' => FALSE,
+      ],
+      'content_type' => [
+        'type' => 'text',
+        'not null' => FALSE,
+      ],
+      'user_roles' => [
+        'type' => 'text',
+        'not null' => FALSE,
+      ],
+      'created' => [
+        'mysql_type' => 'timestamp',
+        'not null' => FALSE,
+        'default' => NULL,
+      ],
+      'updated' => [
+        'mysql_type' => 'timestamp',
+        'not null' => FALSE,
+        'default' => NULL,
+      ],
+      'status' => [
+        'type' => 'int',
+        'not null' => TRUE,
+      ],
+    ],
+    'primary key' => ['id'],
+  ];
+
+  return $schema;
+}

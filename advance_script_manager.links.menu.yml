@@ -1,0 +1,6 @@
+advance_script_manager.listscripts_form:
+  title: 'Advance script manager'
+  route_name: advance_script_manager.listscripts_form
+  description: 'Advance scrips manager'
+  parent: system.admin_config_development
+  weight: 99

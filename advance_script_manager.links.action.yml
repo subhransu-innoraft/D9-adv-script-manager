@@ -1,0 +1,5 @@
+advance_script_manager.add_scripts:
+  route_name: advance_script_manager.scripts_form
+  title: 'Add scripts'
+  appears_on:
+    - advance_script_manager.listscripts_form

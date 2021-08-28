@@ -1,0 +1,237 @@
+<?php
+
+/**
+ * @file
+ * Contains advance_script_manager.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Database\Database;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_help().
+ */
+function advance_script_manager_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the advance_script_manager module.
+    case 'help.page.advance_script_manager':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Advance scripts manager') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_page_attachments_alter().
+ *
+ * Alter CSS/JS files before they are output on the page inside header tag.
+ *
+ * which are defined on the settings page.
+ */
+function advance_script_manager_page_attachments_alter(array &$attachments) {
+  $scripts = fetchScripts('Header');
+  foreach ($scripts as $key => $header_section) {
+    // Get paths from DB.
+    $paths = [];
+    $pages_settings = $header_section->pages_settings;
+    $setting_path = $header_section->visibility_pages;
+    if (!empty($setting_path)) {
+      $paths = preg_split("/(\r\n|\n|\r)/", $setting_path);
+    }
+    // Check page condition & add header.
+    $add_to_header = checkVisibility($paths, $pages_settings);
+    ;
+    // Add Script in header.
+    if (!empty($header_section->script_code)) {
+      $output_scripts = preg_split("/(<\/script>|<\/noscript>)/", $header_section->script_code);
+      $i = 1;
+      $i = count($attachments['#attached']['html_head']) + 1;
+      foreach ($output_scripts as $row) {
+        if (empty($row)) {
+          continue;
+        }
+        $script_tag = 'script';
+        $script_attr = [];
+        $value = '';
+        $script_attributes = preg_replace('/(<script|<noscript)/', '', $row, 1);
+        $get_script_attr = preg_split('/(>)/', $script_attributes, 2);
+        if (isset($get_script_attr[1])) {
+          $value = $get_script_attr[1];
+        }
+        $get_script_tag = preg_split('/<noscript/', $row, 2);
+        if (isset($get_script_tag[1])) {
+          $script_tag = 'noscript';
+        }
+        if (isset($get_script_attr[0]) && !empty($get_script_attr[0])) {
+          $get_attr = preg_replace('/(\'|\")/', '', $get_script_attr[0]);
+          $get_attr = preg_replace('/\s+/', ',', $get_attr);
+          $get_attr = preg_replace('/(,=,|,=|=,)/', '=', $get_attr);
+          $fetch_attr = explode(',', $get_attr);
+
+          foreach ($fetch_attr as $attr) {
+            if (empty($attr)) {
+              continue;
+            }
+            $attr_key_value = explode('=', $attr);
+            if (2 <= count($attr_key_value)) {
+              $script_attr[$attr_key_value[0]] = preg_replace('/' . $attr_key_value[0] . '=/', '', $attr, 1);
+            }
+            else {
+              $script_attr[$attr_key_value[0]] = $attr_key_value[0];
+            }
+          }
+        }
+
+        if ($add_to_header) {
+          $attachments['#attached']['html_head'][$i] = [
+            [
+              '#type' => 'html_tag',
+              '#tag' => $script_tag,
+              '#value' => $value,
+            ],
+            'advance-script-manager-scripts-' . $i,
+          ];
+          if (!empty($script_attr)) {
+            $attachments['#attached']['html_head'][$i][0]['#attributes'] = $script_attr;
+          }
+          $i++;
+        }
+      }
+    }
+
+    // Add CSS code in header.
+    if (!empty($header_section->css_code)) {
+      $output_styles = preg_split("/(<\/style>|\/>)/", $header_section->css_code);
+      $i = 1;
+      $i = count($attachments['#attached']['html_head']) + 1;
+      foreach ($output_styles as $row) {
+        if (empty($row)) {
+          continue;
+        }
+
+        $style_tag  = 'style';
+        $style_attr = [];
+        $value      = '';
+
+        $style_attributes = preg_replace('/(<style|<link)/', '', $row, 1);
+        $get_style_attr   = preg_split('/(>)/', $style_attributes, 2);
+
+        if (isset($get_style_attr[1])) {
+          $value = $get_style_attr[1];
+        }
+
+        $get_style_tag = preg_split('/<link/', $row, 2);
+
+        if (isset($get_style_tag[1])) {
+          $style_tag = 'link';
+        }
+
+        if (isset($get_style_attr[0]) && !empty($get_style_attr[0])) {
+          $get_attr   = preg_replace('/(\'|\")/', '', $get_style_attr[0]);
+          $get_attr   = preg_replace('/\s+/', ',', $get_attr);
+          $get_attr   = preg_replace('/(,=,|,=|=,)/', '=', $get_attr);
+          $fetch_attr = explode(',', $get_attr);
+
+          foreach ($fetch_attr as $attr) {
+            if (empty($attr)) {
+              continue;
+            }
+
+            $attr_key_value = explode('=', $attr);
+            if (2 <= count($attr_key_value)) {
+              $style_attr[$attr_key_value[0]] = preg_replace('/' . $attr_key_value[0] . '=/', '', $attr, 1);
+            }
+            else {
+              $style_attr[$attr_key_value[0]] = $attr_key_value[0];
+            }
+          }
+        }
+        if ($add_to_header) {
+          $attachments['#attached']['html_head'][$i][0] = [
+            '#type' => 'html_tag',
+            '#tag' => $style_tag,
+            '#value' => $value,
+          ];
+          if (!empty($style_attr)) {
+            $attachments['#attached']['html_head'][$i][0]['#attributes'] = $style_attr;
+          }
+          $attachments['#attached']['html_head'][$i][1] = 'advance-script-manager-css-' . $i;
+          $i++;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Fetch all scripts.
+ *
+ * @return array
+ *
+ *   $visibility_section = Header/Footer/Body
+ */
+function fetchScripts($visibility_section = NULL) {
+  $db = Database::getConnection();
+  $scripts = [];
+  if (!empty($visibility_section)) {
+    $scripts = $db->select('advance_script_manager', 'a')
+      ->fields('a', [
+        'script_code',
+        'css_code',
+        'visibility_section',
+        'pages_settings',
+        'visibility_pages',
+        'content_type',
+        'user_roles',
+      ])
+      ->condition('status', 1)
+      ->condition('visibility_section', $visibility_section)
+      ->execute()
+      ->fetchAll();
+  }
+
+  return $scripts;
+}
+
+/**
+ * Check visibility for pages.
+ *
+ * @return bool
+ */
+function checkVisibility($paths = [], $pageSettings = NULL) {
+  $visibility = FALSE;
+  $current_path = \Drupal::service('path.current')->getPath();
+  $result_path = \Drupal::service('path_alias.manager')->getAliasByPath($current_path);
+  $result_path = ltrim($result_path, '/');
+  $front_page = \Drupal::service('path.matcher')->isFrontPage();
+  $cid_parts = [Url::fromRoute('<front>', [], ['absolute' => FALSE])->toString(), ''];
+  if ($front_page) {
+    $result_path = $cid_parts[0];
+  }
+  if (empty($paths)) {
+    return TRUE;
+  }
+  if (!empty($pageSettings)) {
+    if ($pageSettings === 'only' && in_array($result_path, $paths)) {
+      $visibility = TRUE;
+    }
+    elseif ($pageSettings === 'only' && in_array('<front>', $paths) && $front_page) {
+      $visibility = TRUE;
+    }
+    elseif ($pageSettings === 'all' && in_array('<front>', $paths) && $front_page) {
+      $visibility = FALSE;
+    }
+    elseif ($pageSettings === 'all' && !in_array($result_path, $paths)) {
+      $visibility = TRUE;
+    }
+  }
+  else {
+    $visibility = TRUE;
+  }
+  return $visibility;
+
+}
