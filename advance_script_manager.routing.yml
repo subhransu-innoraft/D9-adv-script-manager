@@ -17,3 +17,21 @@ advance_script_manager.listscripts_form:
     _permission: 'advance_script_manager_settings'
   options:
     _admin_route: TRUE
+
+advance_script_manager.advance_script_controller_build:
+  path: '/admin/config/development/advance-script-manager/adv-script-manager'
+  defaults:
+    _controller: '\Drupal\advance_script_manager\Controller\AdvanceScriptController::build'
+    _title: 'Advance script manager'
+  requirements:
+    _permission: 'advance_script_manager_settings'
+  options:
+    _admin_route: TRUE
+
+advance_script_manager.searchscripts_form:
+  path: '/admin/config/development/advance-script-manager/search-form'
+  defaults:
+    _form: '\Drupal\advance_script_manager\Form\SearchscriptsForm'
+    _title: 'SearchscriptsForm'
+  requirements:
+    _access: 'TRUE'
