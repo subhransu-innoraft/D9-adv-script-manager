@@ -33,7 +33,7 @@ function advance_script_manager_help($route_name, RouteMatchInterface $route_mat
  * which are defined on the settings page.
  */
 function advance_script_manager_page_attachments_alter(array &$attachments) {
-  $scripts = fetchScripts('Header');
+  $scripts = fetch_scripts('Header');
   foreach ($scripts as $key => $header_section) {
     // Get paths from DB.
     $paths = [];
@@ -43,8 +43,7 @@ function advance_script_manager_page_attachments_alter(array &$attachments) {
       $paths = preg_split("/(\r\n|\n|\r)/", $setting_path);
     }
     // Check page condition & add header.
-    $add_to_header = checkVisibility($paths, $pages_settings);
-    ;
+    $add_to_header = check_visibility($paths, $pages_settings);
     // Add Script in header.
     if (!empty($header_section->script_code)) {
       $output_scripts = preg_split("/(<\/script>|<\/noscript>)/", $header_section->script_code);
@@ -174,10 +173,10 @@ function advance_script_manager_page_attachments_alter(array &$attachments) {
  * which are defined on the settings page.
  */
 function advance_script_manager_page_top(array &$page_top) {
-  $scripts = fetchScripts('Body');
+  $scripts = fetch_scripts('Body');
   $type_script = 'top_scripts_';
   $type_style = 'top_styles_';
-  advGetContent($page_top, $scripts, $type_script, $type_style);
+  adv_get_content($page_top, $scripts, $type_script, $type_style);
 }
 
 /**
@@ -187,10 +186,10 @@ function advance_script_manager_page_top(array &$page_top) {
  * which are defined on the settings page.
  */
 function advance_script_manager_page_bottom(array &$page_bottom) {
-  $scripts = fetchScripts('Footer');
+  $scripts = fetch_scripts('Footer');
   $type_script = 'bottom_scripts_';
   $type_style = 'bottom_styles_';
-  advGetContent($page_bottom, $scripts, $type_script, $type_style);
+  adv_get_content($page_bottom, $scripts, $type_script, $type_style);
 }
 
 /**
@@ -200,7 +199,7 @@ function advance_script_manager_page_bottom(array &$page_bottom) {
  *
  *   $visibility_section = Header/Footer/Body
  */
-function fetchScripts($visibility_section = NULL) {
+function fetch_scripts($visibility_section = NULL) {
   $db = Database::getConnection();
   $scripts = [];
   if (!empty($visibility_section)) {
@@ -224,20 +223,17 @@ function fetchScripts($visibility_section = NULL) {
 }
 
 /**
- * Check visibility for pages.
- *
- * @return bool
+ * {@inheritdoc}
  */
-function checkVisibility($paths = [], $pageSettings = NULL) {
+function check_visibility($paths = [], $pageSettings = NULL) {
   $visibility = FALSE;
   $current_path = \Drupal::service('path.current')->getPath();
   $result_path = \Drupal::service('path_alias.manager')->getAliasByPath($current_path);
-  $result_path = ltrim($result_path, '/');
   $front_page = \Drupal::service('path.matcher')->isFrontPage();
-  $cid_parts = [Url::fromRoute('<front>', [], ['absolute' => FALSE])->toString(), ''];
-  if ($front_page) {
-    $result_path = $cid_parts[0];
-  }
+  $cid_parts = [
+    Url::fromRoute('<front>', [], ['absolute' => FALSE])->toString(),
+    '',
+  ];
   if (empty($paths)) {
     return TRUE;
   }
@@ -263,6 +259,8 @@ function checkVisibility($paths = [], $pageSettings = NULL) {
 }
 
 /**
+ * Helper method use for alter the body content.
+ *
  * @param array $page_type
  *   Related to the theme and render system.
  * @param object $scripts
@@ -272,9 +270,16 @@ function checkVisibility($paths = [], $pageSettings = NULL) {
  * @param string $type_style
  *   Assign value of the scription section.
  */
-function advGetContent(array &$page_type, $scripts, $type_script, $type_style) {
-  $add_to_header = checkVisibility($paths, $pages_settings);
+function adv_get_content(array &$page_type, $scripts, $type_script, $type_style) {
   foreach ($scripts as $key => $body_section) {
+    $paths = [];
+    $pages_settings = $header_section->pages_settings;
+    $setting_path = $header_section->visibility_pages;
+    if (!empty($setting_path)) {
+      $paths = preg_split("/(\r\n|\n|\r)/", $setting_path);
+    }
+    // Check page condition & add header.
+    $add_to_header = check_visibility($paths, $pages_settings);
     if (isset($body_section->script_code) && !empty($body_section->script_code)) {
       $output_scripts = preg_split("/(<\/script>|<\/noscript>)/", $body_section->script_code);
       $i = 1;
@@ -376,16 +381,17 @@ function advGetContent(array &$page_type, $scripts, $type_script, $type_style) {
             }
           }
         }
-
-        $page_type[$type_style . $i][] = [
-          '#type'  => 'html_tag',
-          '#tag'   => $style_tag,
-          '#value' => $value,
-        ];
-        if (!empty($style_attr)) {
-          $page_type[$type_style . $i]['#attributes'] = $style_attr;
+        if ($add_to_header) {
+          $page_type[$type_style . $i][] = [
+            '#type'  => 'html_tag',
+            '#tag'   => $style_tag,
+            '#value' => $value,
+          ];
+          if (!empty($style_attr)) {
+            $page_type[$type_style . $i]['#attributes'] = $style_attr;
+          }
+          $i++;
         }
-        $i++;
       }
     }
   }

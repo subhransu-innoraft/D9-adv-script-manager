@@ -169,8 +169,12 @@ class ListscriptsForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Display result.
-    foreach ($form_state->getValues() as $key => $value) {
-      $this->messenger->addMessage($key . ': ' . ($key === 'text_format' ? $value['value'] : $value));
+    $item_ids = $form_state->getValue('list_scripts');
+    $res = $this->database->delete('advance_script_manager')
+      ->condition('id', $item_ids, 'IN')
+      ->execute();
+    if ($res) {
+      $this->messenger->addMessage($this->t('Scripts has been deleted.'));
     }
   }
 
@@ -179,8 +183,15 @@ class ListscriptsForm extends FormBase {
    */
   public function deactivateSelected(array &$form, FormStateInterface $form_state) {
     // Display result.
-    foreach ($form_state->getValues() as $key => $value) {
-      $this->messenger->addMessage($key . ': ' . ($key === 'text_format' ? $value['value'] : $value));
+    $item_ids = $form_state->getValue('list_scripts');
+    if (!empty($item_ids)) {
+      $res = $this->database->update('advance_script_manager')
+        ->fields(['status' => 2])
+        ->condition('id', $item_ids, 'IN')
+        ->execute();
+      if ($res) {
+        $this->messenger->addMessage($this->t('Scripts has been deactivated.'));
+      }
     }
   }
 
