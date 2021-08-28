@@ -107,7 +107,7 @@ class SearchscriptsForm extends FormBase {
 
     $form['container']['clear'] = [
       '#type' => 'link',
-      '#title' => 'Clear time log',
+      '#title' => 'Reset',
       '#url' => URL::fromRoute('advance_script_manager.advance_script_controller_build'),
       '#attributes' => [
         'class' => ['button', ' js-form-submit', 'form-submit'],
