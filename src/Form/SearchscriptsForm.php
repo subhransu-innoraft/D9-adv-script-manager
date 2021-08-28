@@ -66,7 +66,13 @@ class SearchscriptsForm extends FormBase {
     $visibility = $this->requestStack->getCurrentRequest()->query->get('visibility');
     $status = $this->requestStack->getCurrentRequest()->query->get('status');
 
-    $form['visibility'] = [
+    $form['container'] = [
+      '#type' => 'fieldset',
+      '#prefix' => '<div id="names-fieldset-wrapper">',
+      '#suffix' => '</div>',
+    ];
+
+    $form['container']['visibility'] = [
       '#type' => 'select',
       '#title' => $this->t('Visibility'),
       '#options' => [
@@ -80,7 +86,7 @@ class SearchscriptsForm extends FormBase {
       '#size' => 1,
       '#weight' => '0',
     ];
-    $form['status'] = [
+    $form['container']['status'] = [
       '#type' => 'select',
       '#title' => $this->t('Status'),
       '#options' => [
@@ -93,13 +99,13 @@ class SearchscriptsForm extends FormBase {
       '#weight' => '0',
       '#suffix' => '</div>',
     ];
-    $form['submit'] = [
+    $form['container']['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Filter'),
       '#prefix' => '<div class="form--inline clearfix">',
     ];
 
-    $form['clear'] = [
+    $form['container']['clear'] = [
       '#type' => 'link',
       '#title' => 'Clear time log',
       '#url' => URL::fromRoute('advance_script_manager.advance_script_controller_build'),
