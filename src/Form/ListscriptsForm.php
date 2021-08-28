@@ -9,7 +9,7 @@ use Drupal\Core\Link;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class ListscriptsForm.
+ * Class ListscriptsForm for listing scripts.
  */
 class ListscriptsForm extends FormBase {
 
@@ -43,6 +43,13 @@ class ListscriptsForm extends FormBase {
   protected $header;
 
   /**
+   * The current request on url.
+   *
+   * @var Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $requestStack;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -50,6 +57,7 @@ class ListscriptsForm extends FormBase {
     $instance->messenger = $container->get('messenger');
     $instance->database = $container->get('database');
     $instance->entityTypeManager = $container->get('entity_type.manager');
+    $instance->requestStack = $container->get('request_stack');
     return $instance;
   }
 
@@ -65,43 +73,83 @@ class ListscriptsForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $this->header = [
-      'script_name' => [
-        'data' => $this->t('Script name'),
-        'field' => 'script_name',
-      ],
-      'visibility_section' => [
-        'data' => $this->t('visibility_section'),
-        'field' => 'visibility_section',
-      ],
-      'created' => [
-        'data' => $this->t('Created'),
-        'field' => 'created',
-      ],
-      'updated' => [
-        'data' => $this->t('Updated'),
-        'field' => 'updated',
-      ],
-      'status' => [
-        'data' => $this->t('Status'),
-        'field' => 'status',
-      ],
+      'script_name' => $this->t('Script name'),
+      'visibility_section' => $this->t('visibility section'),
+      'created' => $this->t('Created'),
+      'updated' => $this->t('Updated'),
+      'status' => $this->t('Status'),
       'action' => $this->t('Action'),
     ];
+    // Get parameter value while submitting filter form.
+    $visibility = $this->requestStack->getCurrentRequest()->query->get('visibility');
+    $status = $this->requestStack->getCurrentRequest()->query->get('status');
+    $tblrow = $this->getRecords($visibility, $status);
+
+    $form['list_scripts'] = [
+      '#type' => 'tableselect',
+      '#header' => $this->header,
+      '#options' => $tblrow,
+      '#weight' => '0',
+      '#empty' => $this->t('No records found'),
+      '#attributes' => ['class' => ['advance-scripts-table']],
+    ];
+    $form['pager'] = [
+      '#type' => 'pager',
+      '#prefix' => '<div class="adv-pagination">',
+      '#suffix' => '</div>',
+    ];
+    $form['submit'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Delete selected scripts'),
+    ];
+
+    $form['bulk_deactivate'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Deactivate selected scripts'),
+      '#submit' => [
+        '::deactivateSelected',
+      ],
+
+    ];
+
+    return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    foreach ($form_state->getValues() as $key => $value) {
+      // @todo Validate fields.
+    }
+    parent::validateForm($form, $form_state);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getRecords($visibility = NULL, $status = NULL) {
     $tblrow = [];
-    $scripts = $this->database->select('advance_script_manager', 'a')
-      ->fields('a', [
-        'id',
-        'script_name',
-        'visibility_section',
-        'created',
-        'updated',
-        'status',
-      ])
-      ->condition('status', 1)
-      ->orderBy('id', 'DESC')
-      ->execute()
-      ->fetchAll();
-    foreach ($scripts as $row) {
+    $query = $this->database->select('advance_script_manager', 'a');
+    $query->fields('a', [
+      'id',
+      'script_name',
+      'visibility_section',
+      'created',
+      'updated',
+      'status',
+    ]);
+    if (!empty($visibility) && $visibility != '') {
+      $query->condition('visibility_section', $visibility);
+    }
+    if (!empty($status) && $status != '') {
+      $query->condition('status', $status);
+    }
+    $query->orderBy('id', 'DESC');
+    $pager = $query->extend('Drupal\Core\Database\Query\PagerSelectExtender')->limit(20);
+    $result = $pager->execute()->fetchAll();
+
+    foreach ($result as $row) {
       $edit = Url::FromUserInput('/admin/config/development/advance-script-manager/scripts?num=' . $row->id);
       $tblrow[$row->id] = [
         'script_name' => $row->script_name,
@@ -113,30 +161,7 @@ class ListscriptsForm extends FormBase {
       ];
     }
 
-    $form['list_scripts'] = [
-      '#type' => 'tableselect',
-      '#header' => $this->header,
-      '#options' => $tblrow,
-      '#weight' => '0',
-      '#empty' => $this->t('No records found'),
-      '#attributes' => ['class' => ['advance-scripts-table']],
-    ];
-    $form['submit'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Submit'),
-    ];
-
-    return $form;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    foreach ($form_state->getValues() as $key => $value) {
-      // @TODO: Validate fields.
-    }
-    parent::validateForm($form, $form_state);
+    return $tblrow;
   }
 
   /**
@@ -145,7 +170,17 @@ class ListscriptsForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Display result.
     foreach ($form_state->getValues() as $key => $value) {
-      $this->messenger->addMessage($key . ': ' . ($key === 'text_format'?$value['value']:$value));
+      $this->messenger->addMessage($key . ': ' . ($key === 'text_format' ? $value['value'] : $value));
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function deactivateSelected(array &$form, FormStateInterface $form_state) {
+    // Display result.
+    foreach ($form_state->getValues() as $key => $value) {
+      $this->messenger->addMessage($key . ': ' . ($key === 'text_format' ? $value['value'] : $value));
     }
   }
 

@@ -8,7 +8,7 @@ use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class SearchscriptsForm.
+ * Class SearchscriptsForm for search.
  */
 class SearchscriptsForm extends FormBase {
 
@@ -66,14 +66,7 @@ class SearchscriptsForm extends FormBase {
     $visibility = $this->requestStack->getCurrentRequest()->query->get('visibility');
     $status = $this->requestStack->getCurrentRequest()->query->get('status');
 
-    $form['container'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Name'),
-      '#collapsible' => TRUE, // Added
-      '#collapsed' => FALSE,  // Added
-    );
-
-    $form['container']['visibility'] = [
+    $form['visibility'] = [
       '#type' => 'select',
       '#title' => $this->t('Visibility'),
       '#options' => [
@@ -81,12 +74,13 @@ class SearchscriptsForm extends FormBase {
         'Header' => $this->t('Header'),
         'Footer' => $this->t('Footer'),
         'Body' => $this->t('Body'),
-        ],
+      ],
       '#default_value' => (!empty($visibility)) ? $visibility : 'Any',
+      '#prefix' => '<div class="form--inline clearfix">',
       '#size' => 1,
       '#weight' => '0',
     ];
-    $form['container']['status'] = [
+    $form['status'] = [
       '#type' => 'select',
       '#title' => $this->t('Status'),
       '#options' => [
@@ -97,22 +91,23 @@ class SearchscriptsForm extends FormBase {
       '#default_value' => (!empty($status)) ? $status : '',
       '#size' => 1,
       '#weight' => '0',
+      '#suffix' => '</div>',
     ];
-    $form['container']['submit'] = [
+    $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Filter'),
-    ];
-    $form['container']['actions'] = [
-      '#type' => 'actions',
+      '#prefix' => '<div class="form--inline clearfix">',
     ];
 
-    $form['container']['actions']['submit2'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Clear'),
-      "#weight" => 2,
-      '#button_type' => 'warning',
-      '#submit' => [[$this, 'submitClearForm']],
-      '#limit_validation_errors' => [],
+    $form['clear'] = [
+      '#type' => 'link',
+      '#title' => 'Clear time log',
+      '#url' => URL::fromRoute('advance_script_manager.advance_script_controller_build'),
+      '#attributes' => [
+        'class' => ['button', ' js-form-submit', 'form-submit'],
+        'role' => 'button',
+      ],
+      '#suffix' => '</div>',
     ];
 
     return $form;
@@ -123,7 +118,7 @@ class SearchscriptsForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $fields = $form_state->getValues();
-    $visibility = $fields['visibility'];
+    $visibility = $form_state->getValue(['visibility']);
     $status = $fields['status'];
     $url = Url::fromRoute('advance_script_manager.advance_script_controller_build')
       ->setRouteParameters([
