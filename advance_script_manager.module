@@ -168,6 +168,32 @@ function advance_script_manager_page_attachments_alter(array &$attachments) {
 }
 
 /**
+ * Implements hook_page_top().
+ *
+ * Add scripts after the body tag on overall the site
+ * which are defined on the settings page.
+ */
+function advance_script_manager_page_top(array &$page_top) {
+  $scripts = fetchScripts('Body');
+  $type_script = 'top_scripts_';
+  $type_style = 'top_styles_';
+  advGetContent($page_top, $scripts, $type_script, $type_style);
+}
+
+/**
+ * Implements hook_page_bottom().
+ *
+ * Add scripts before the Footer tag on overall the site
+ * which are defined on the settings page.
+ */
+function advance_script_manager_page_bottom(array &$page_bottom) {
+  $scripts = fetchScripts('Footer');
+  $type_script = 'bottom_scripts_';
+  $type_style = 'bottom_styles_';
+  advGetContent($page_bottom, $scripts, $type_script, $type_style);
+}
+
+/**
  * Fetch all scripts.
  *
  * @return array
@@ -234,4 +260,133 @@ function checkVisibility($paths = [], $pageSettings = NULL) {
   }
   return $visibility;
 
+}
+
+/**
+ * @param array $page_type
+ *   Related to the theme and render system.
+ * @param object $scripts
+ *   Get data from database.
+ * @param string $type_script
+ *   Assign value of the scription section.
+ * @param string $type_style
+ *   Assign value of the scription section.
+ */
+function advGetContent(array &$page_type, $scripts, $type_script, $type_style) {
+  $add_to_header = checkVisibility($paths, $pages_settings);
+  foreach ($scripts as $key => $body_section) {
+    if (isset($body_section->script_code) && !empty($body_section->script_code)) {
+      $output_scripts = preg_split("/(<\/script>|<\/noscript>)/", $body_section->script_code);
+      $i = 1;
+      foreach ($output_scripts as $row) {
+        if (empty($row)) {
+          continue;
+        }
+        $script_tag  = 'script';
+        $script_attr = [];
+        $value       = '';
+
+        $script_attributes = preg_replace('/(<script|<noscript)/', '', $row, 1);
+        $get_script_attr   = preg_split('/(>)/', $script_attributes, 2);
+        if (isset($get_script_attr[1])) {
+          $value = $get_script_attr[1];
+        }
+
+        $get_script_tag = preg_split('/<noscript/', $row, 2);
+
+        if (isset($get_script_tag[1])) {
+          $script_tag = 'noscript';
+        }
+        if (isset($get_script_attr[0]) && !empty($get_script_attr[0])) {
+          $get_attr   = preg_replace('/(\'|\")/', '', $get_script_attr[0]);
+          $get_attr   = preg_replace('/\s+/', ',', $get_attr);
+          $get_attr   = preg_replace('/(,=,|,=|=,)/', '=', $get_attr);
+          $fetch_attr = explode(',', $get_attr);
+
+          foreach ($fetch_attr as $attr) {
+            if (empty($attr)) {
+              continue;
+            }
+
+            $attr_key_value = explode('=', $attr);
+            if (2 <= count($attr_key_value)) {
+              $script_attr[$attr_key_value[0]] = preg_replace('/' . $attr_key_value[0] . '=/', '', $attr, 1);
+            }
+            else {
+              $script_attr[$attr_key_value[0]] = $attr_key_value[0];
+            }
+          }
+        }
+        if ($add_to_header) {
+          $page_type[$type_script . $i][] = [
+            '#type'  => 'html_tag',
+            '#tag'   => $script_tag,
+            '#value' => $value,
+          ];
+          if (!empty($script_attr)) {
+            $page_type[$type_script . $i]['#attributes'] = $script_attr;
+          }
+          $i++;
+        }
+      }
+    }
+    if (isset($body_section->css_code) && !empty($body_section->css_code)) {
+      $output_styles = preg_split("/(<\/style>|\/>)/", $body_section->css_code);
+      $i = 1;
+      foreach ($output_styles as $row) {
+
+        if (empty($row)) {
+          continue;
+        }
+
+        $style_tag  = 'style';
+        $style_attr = [];
+        $value      = '';
+
+        $style_attributes = preg_replace('/(<style|<link)/', '', $row, 1);
+        $get_style_attr   = preg_split('/(>)/', $style_attributes, 2);
+
+        if (isset($get_style_attr[1])) {
+          $value = $get_style_attr[1];
+        }
+
+        $get_style_tag = preg_split('/<link/', $row, 2);
+
+        if (isset($get_style_tag[1])) {
+          $style_tag = 'link';
+        }
+
+        if (isset($get_style_attr[0]) && !empty($get_style_attr[0])) {
+          $get_attr   = preg_replace('/(\'|\")/', '', $get_style_attr[0]);
+          $get_attr   = preg_replace('/\s+/', ',', $get_attr);
+          $get_attr   = preg_replace('/(,=,|,=|=,)/', '=', $get_attr);
+          $fetch_attr = explode(',', $get_attr);
+
+          foreach ($fetch_attr as $attr) {
+            if (empty($attr)) {
+              continue;
+            }
+
+            $attr_key_value = explode('=', $attr);
+            if (2 <= count($attr_key_value)) {
+              $style_attr[$attr_key_value[0]] = preg_replace('/' . $attr_key_value[0] . '=/', '', $attr, 1);
+            }
+            else {
+              $style_attr[$attr_key_value[0]] = $attr_key_value[0];
+            }
+          }
+        }
+
+        $page_type[$type_style . $i][] = [
+          '#type'  => 'html_tag',
+          '#tag'   => $style_tag,
+          '#value' => $value,
+        ];
+        if (!empty($style_attr)) {
+          $page_type[$type_style . $i]['#attributes'] = $style_attr;
+        }
+        $i++;
+      }
+    }
+  }
 }
