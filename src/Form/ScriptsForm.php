@@ -5,6 +5,7 @@ namespace Drupal\advance_script_manager\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Url;
 
 /**
  * Class ScriptsForm.
@@ -72,6 +73,7 @@ class ScriptsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $request_id = $this->requestStack->getCurrentRequest()->query->get('num');
+    $data = reset($this->getSpecificRecord($request_id));
     $config = $this->config('advance_script_manager.scripts');
     $form['name'] = [
       '#type' => 'textfield',
@@ -79,6 +81,7 @@ class ScriptsForm extends ConfigFormBase {
       '#size' => 64,
       '#required' => 'true',
       '#description' => $this->t('Enter a name to describe the code block'),
+      '#default_value' => $data->script_name,
     ];
     $form['enable_code_script'] = [
       '#type' => 'radios',
@@ -88,19 +91,21 @@ class ScriptsForm extends ConfigFormBase {
         '2' => $this->t('Disabled'),
       ],
       '#description' => $this->t('Scripts code snippets are disabled by default, so you won\'t accidentally make the code live.'),
-      '#default_value' => 2,
+      '#default_value' => isset($data->status) ? $data->status : 2,
     ];
     $form['script_code'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Java script code'),
       '#description'   => $this->t('<p>You can add multiple <strong>scripts</strong> here with multiple ways, For example: </p><p>1. &lt;script type="text/javascript" src="http://www.example.com/script.js"&gt;&lt;/script&gt;</p><p> 2. &lt;script type="text/javascript" src="/script.js"&gt;&lt;/script&gt;</p><p> 3. &lt;script type="text/javascript"&gt;console.log("HFS Header");&lt;/script&gt;</p>'),
       '#rows'          => 10,
+      '#default_value' => isset($data->script_code) ? $data->script_code : '',
     ];
     $form['css_code'] = [
       '#type' => 'textarea',
       '#title' => $this->t('CSS code'),
       '#description'   => $this->t('<p>You can add multiple <strong>stylesheets</strong> here with multiple ways, For example: </p><p>1. &lt;link type="text/css" rel="stylesheet" href="http://www.example.com/style.css" media="all" /&gt;</p><p> 2. &lt;link type="text/css" rel="stylesheet" href="/style.css" media="all" /&gt;</p><p> 3. &lt;style&gt;#header { color: grey; }&lt;/style&gt;</p>'),
       '#rows'          => 10,
+      '#default_value' => isset($data->css_code) ? $data->css_code : '',
     ];
     $form['visibility_settings'] = [
       '#type' => 'select',
@@ -111,7 +116,7 @@ class ScriptsForm extends ConfigFormBase {
         'Body' => $this->t('Body'),
       ],
       '#size' => 1,
-      '#default_value' => 'Header',
+      '#default_value' => isset($data->visibility_section) ? $data->visibility_section : 'Header',
     ];
     $form['pages_settings'] = [
       '#type' => 'radios',
@@ -120,11 +125,13 @@ class ScriptsForm extends ConfigFormBase {
         'all' => $this->t('All pages expected those listed'),
         'only' => $this->t('Only the listed pages'),
       ],
+      '#default_value' => isset($data->pages_settings) ? $data->pages_settings : '',
     ];
     $form['visibility_pages'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Pages'),
       '#description' => $this->t('Specify the pages by using their paths. Enter one path per line. &ltfront&gt is the front page'),
+      '#default_value' => isset($data->visibility_pages) ? $data->visibility_pages : '',
     ];
     $form['user_roles'] = [
       '#type' => 'checkboxes',
@@ -144,12 +151,7 @@ class ScriptsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // parent::submitForm($form, $form_state);
-    //    $this->config('advance_script_manager.scripts')
-    //      ->set('name', $form_state->getValue('name')['value'])
-    //      ->set('enable_code_script', $form_state->getValue('enable_code_script'))
-    //      ->set('', $form_state->getValue(''))
-    //      ->save();
+    $request_id = $this->requestStack->getCurrentRequest()->query->get('num');
     $value = $form_state->getValues();
     $content_types = implode(",", $value['content_types']);
     $user_roles = implode(",", $value['user_roles']);
@@ -164,12 +166,24 @@ class ScriptsForm extends ConfigFormBase {
       'user_roles' => $user_roles,
       'status' => $value['enable_code_script'],
     ];
-    $res = $this->database->insert('advance_script_manager')
-      ->fields($field)
-      ->execute();
-    if ($res) {
-      $this->messenger->addMessage($this->t('Script config saved'));
+    if (!empty($request_id)) {
+      $res = $this->database->update('advance_script_manager')
+        ->fields($field)
+        ->execute();
+      if ($res) {
+        $this->messenger->addMessage($this->t('Script config updated.'));
+      }
     }
+    else {
+      $res = $this->database->insert('advance_script_manager')
+        ->fields($field)
+        ->execute();
+      if ($res) {
+        $this->messenger->addMessage($this->t('Script config saved.'));
+      }
+    }
+    $url = Url::fromRoute('advance_script_manager.advance_script_controller_build');
+    $form_state->setRedirectUrl($url);
   }
 
   /**
@@ -194,6 +208,18 @@ class ScriptsForm extends ConfigFormBase {
       $data[$value->label()] = $value->label();
     }
     return $data;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSpecificRecord($id) {
+    $result = $this->database->select('advance_script_manager', 'a')
+      ->fields('a')
+      ->condition('id', $id)
+      ->execute()
+      ->fetchAll();
+    return $result;
   }
 
 }

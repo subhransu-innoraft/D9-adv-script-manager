@@ -75,3 +75,11 @@ function advance_script_manager_schema() {
 
   return $schema;
 }
+
+/**
+ * Implemented hook_uninstall().
+ */
+function advance_script_manager_uninstall() {
+  // Remove tables.
+  drupal_uninstall_schema('advance_script_manager');
+}
