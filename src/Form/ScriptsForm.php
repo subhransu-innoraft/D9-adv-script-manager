@@ -73,7 +73,7 @@ class ScriptsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $request_id = $this->requestStack->getCurrentRequest()->query->get('num');
-    $data = reset($this->getSpecificRecord($request_id));
+    $data = $this->getSpecificRecord($request_id);
     $config = $this->config('advance_script_manager.scripts');
     $form['name'] = [
       '#type' => 'textfield',
@@ -81,7 +81,7 @@ class ScriptsForm extends ConfigFormBase {
       '#size' => 64,
       '#required' => 'true',
       '#description' => $this->t('Enter a name to describe the code block'),
-      '#default_value' => $data->script_name,
+      '#default_value' => isset($data['script_name']) ? $data['script_name'] : '',
     ];
     $form['enable_code_script'] = [
       '#type' => 'radios',
@@ -91,21 +91,21 @@ class ScriptsForm extends ConfigFormBase {
         '2' => $this->t('Disabled'),
       ],
       '#description' => $this->t("Scripts code snippets are disabled by default, so you won\'t accidentally make the code live."),
-      '#default_value' => isset($data->status) ? $data->status : 2,
+      '#default_value' => isset($data['status']) ? $data['status'] : 2,
     ];
     $form['script_code'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Java script code'),
       '#description'   => $this->t('<p>You can add multiple <strong>scripts</strong> here with multiple ways, For example: </p><p>1. &lt;script type="text/javascript" src="http://www.example.com/script.js"&gt;&lt;/script&gt;</p><p> 2. &lt;script type="text/javascript" src="/script.js"&gt;&lt;/script&gt;</p><p> 3. &lt;script type="text/javascript"&gt;console.log("HFS Header");&lt;/script&gt;</p>'),
       '#rows'          => 10,
-      '#default_value' => isset($data->script_code) ? $data->script_code : '',
+      '#default_value' => isset($data['script_code']) ? $data['script_code'] : '',
     ];
     $form['css_code'] = [
       '#type' => 'textarea',
       '#title' => $this->t('CSS code'),
       '#description'   => $this->t('<p>You can add multiple <strong>stylesheets</strong> here with multiple ways, For example: </p><p>1. &lt;link type="text/css" rel="stylesheet" href="http://www.example.com/style.css" media="all" /&gt;</p><p> 2. &lt;link type="text/css" rel="stylesheet" href="/style.css" media="all" /&gt;</p><p> 3. &lt;style&gt;#header { color: grey; }&lt;/style&gt;</p>'),
       '#rows'          => 10,
-      '#default_value' => isset($data->css_code) ? $data->css_code : '',
+      '#default_value' => isset($data['css_code']) ? $data['css_code'] : '',
     ];
     $form['visibility_settings'] = [
       '#type' => 'select',
@@ -219,7 +219,7 @@ class ScriptsForm extends ConfigFormBase {
       ->fields('a')
       ->condition('id', $id)
       ->execute()
-      ->fetchAll();
+      ->fetchAssoc();
     return $result;
   }
 
